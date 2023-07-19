@@ -4,10 +4,10 @@ import json
 class NodeData:
     short_name = ""
     long_name = ""
-    ip = ""
+    ip = []
     mac_address = []
-    netmask = ""
-    gateway = ""
+    netmask = []
+    gateway = []
     dhcp_enable = False
     dhcp_capable = False
     def __init__(self) :
@@ -45,12 +45,12 @@ if __name__ == "__main__":
     print("short name: " + nodeData.short_name)
     print("long name: " + nodeData.long_name)
     print("mac_address: " + ':'.join('{:02X}'.format(num) for num in nodeData.mac_address))
-    print("ip: " + nodeData.ip)
-    print("gateway " + nodeData.gateway)
-    print("netmaks: " + nodeData.netmask)
+    print("ip: " + '.'.join('{}'.format(num) for num in nodeData.ip))
+    print("gateway " + '.'.join('{}'.format(num) for num in nodeData.gateway))
+    print("netmaks: " + '.'.join('{}'.format(num) for num in nodeData.netmask))
     print("DHCP enable: " + str(nodeData.dhcp_enable))
     print("DHCP capable: " + str(nodeData.dhcp_capable))
 
     nodeData.dhcp_enable = True
-    nodeData.gateway = '192.168.1.1'
+    nodeData.gateway = [192, 168, 1, 1]
     nodeData.write_data()

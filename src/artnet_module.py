@@ -17,18 +17,25 @@ class ArtNetModule:
     def node_server(self):
         print('Server started')
         while True:
-            print('listing')
+            print('Listing ..')
             data, address = self.sock.recvfrom(1024)
             if data[:8] == self.PROTOCOL_ID:
                 opcode = (data[9] << 8) + data[8]
                 
-                if opcode == opCodes.opPoll:
+                if opcode == opCodes.OpPoll:
                     print("ArtPoll recieved")
                     tx_data = self.gen_artpollreply()
                     self.sock.sendto(tx_data,address)
                     print("ArtPollReply sent")
                     continue
                 
+                if opcode == opCodes.OpIpProg:
+                    print("OpIpProg recieved")
+                    tx_data = self.genArtIpProgReply()
+                    self.sock.sendto(tx_data,address)
+                    print("ArtPollReply sent")
+                    continue
+
                 print(f'Unhalled opCode: {hex(opcode)}')
 
 
@@ -38,7 +45,7 @@ class ArtNetModule:
         data = bytearray(213)
         header = bytearray(self.PROTOCOL_ID)
         opCode = bytearray([0x00, 0x21])
-        ipAddress = bytearray([192, 168, 32, 152])
+        ipAddress = bytearray(self.node_data.ip)
         port=  bytearray([0x36,0x19])
         vers = bytearray([0x00, 0x00])
         unused1= bytearray([0x00, 0x00, 0x00, 0x00, 0x00])
@@ -50,63 +57,26 @@ class ArtNetModule:
         longname[0:len(self.node_data.long_name)]= bytearray(self.node_data.long_name.encode())
         unused3= bytearray(93)
         mac=bytearray(self.node_data.mac_address)
-        bindipAddress = bytearray([192, 168, 32, 152])
+        bindipAddress = bytearray(self.node_data.ip)
         unused4 =  bytearray([0x00])
         status2 =  bytearray([st])
         unused5= bytearray(26)
         print(st)
         return header + opCode + ipAddress + port + vers + unused1 + status1 + unused2 + shortname + longname + unused3 + mac + bindipAddress + unused4 + status2 + unused5
 
-def genArtIpProg():
-    header = bytearray(b"Art-Net\0")
-    opCode = bytearray([0x00, 0xf9])
-    vers = bytearray([0x00, 0x00])
-    unused1= bytearray(4)
-    ipAddress = bytearray([192, 168, 32, 152])
-    subnet = bytearray([255, 255, 255, 0x00])
-    port=  bytearray([0x19,0x36])
-    status= bytearray([64])
-    gw = bytearray([192, 168, 0, 0])
-    unused2= bytearray(2)
-    return header + opCode + vers + unused1 + ipAddress + subnet + port + status + gw + unused2
-
-
-def gen_artpollrepl2():
-    
-    header = bytearray(b"Art-Net\0")
-    opCode = bytearray([0x00, 0x21])
-    ipAddress = bytearray([192, 168, 32, 12])
-    port=  bytearray([0x36,0x19])
-    vers = bytearray([0x00, 0x00])
-    unused1= bytearray([0x00, 0x00, 0x00, 0x00, 0x00])
-    status1 = bytearray([0x00])
-    unused2= bytearray([0x00, 0x00])
-    shortname= bytearray(18)
-    shortname[0:13]= bytearray(b"python tesAAr")
-    longname= bytearray(64)
-    longname[0:17]= bytearray(b"python tesAAr long")
-    unused3= bytearray(92)
-    mac=bytearray([0x4B, 0xD7, 0x9F, 0x23, 0xE1, 0x6C])
-    bindipAddress = bytearray([192, 168, 32, 12])
-    unused4 =  bytearray([0x00])
-    status2 =  bytearray([0b01100000])
-    unused5= bytearray(26)
-
-    return header + opCode + ipAddress + port + vers + unused1 + status1 + unused2 + shortname + longname + unused3 + mac + bindipAddress + unused4 + status2 + unused5
-    # return data
-
-def genArtIpProg2():
-    header = bytearray(b"Art-Net\0")
-    opCode = bytearray([0x00, 0xf9])
-    vers = bytearray([0x00, 0x00])
-    unused1= bytearray(4)
-    ipAddress = bytearray([192, 168, 32, 12])
-    subnet = bytearray([255, 255, 255, 0x00])
-    port=  bytearray([0x19,0x36])
-    status= bytearray([64])
-    gw = bytearray([192, 168, 0, 0])
-    unused2= bytearray(2)
-    return header + opCode + vers + unused1 + ipAddress + subnet + port + status + gw + unused2
+    def genArtIpProgReply(self):
+        
+        header = bytearray(self.PROTOCOL_ID)
+        opCode = bytearray([0x00, 0xf9])
+        vers = bytearray([0x00, 0x00])
+        unused1= bytearray(4)
+        ipAddress = bytearray(self.node_data.ip)
+        subnet = bytearray(self.node_data.netmask)
+        port=  bytearray([0x19,0x36])
+        status= bytearray([64])
+        gw = bytearray(self.node_data.gateway)
+        unused2= bytearray(2)
+        return header + opCode + vers + unused1 + ipAddress + subnet + port + status + gw + unused2
 
 
 if __name__ == "__main__":

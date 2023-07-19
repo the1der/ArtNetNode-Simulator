@@ -1,7 +1,7 @@
 ✔ constants @done(23-07-15 22:24)
 ✔ init @done(23-07-15 22:24)
 ☐ add opCode
-☐ recv packet
+✔ recv packet @done(23-07-19 18:54)
 ☐ send packet
 ☐ artPoll
 ☐ opIpprog
