@@ -31,16 +31,17 @@ class ArtNetModule:
                 
                 if opcode == opCodes.OpIpProg:
                     print("OpIpProg recieved")
-                    tx_data = self.genArtIpProgReply()
+                    self.decOpIpProgReply(data)
+                    tx_data = self.genOpIpProgReply()
                     self.sock.sendto(tx_data,address)
-                    print("ArtPollReply sent")
+                    print("OpIpProgReply sent")
                     continue
 
                 print(f'Unhalled opCode: {hex(opcode)}')
 
 
     def gen_artpollreply(self):
-        st = 0x40 if self.node_data.dhcp_enable else 0x00
+        st = 0x40 if self.node_data.dhcp_capable else 0x00
         st = st | 0x20 if self.node_data.dhcp_enable else st
         data = bytearray(213)
         header = bytearray(self.PROTOCOL_ID)
@@ -64,7 +65,7 @@ class ArtNetModule:
         print(st)
         return header + opCode + ipAddress + port + vers + unused1 + status1 + unused2 + shortname + longname + unused3 + mac + bindipAddress + unused4 + status2 + unused5
 
-    def genArtIpProgReply(self):
+    def genOpIpProgReply(self):
         
         header = bytearray(self.PROTOCOL_ID)
         opCode = bytearray([0x00, 0xf9])
@@ -76,7 +77,11 @@ class ArtNetModule:
         status= bytearray([64])
         gw = bytearray(self.node_data.gateway)
         unused2= bytearray(2)
-        return header + opCode + vers + unused1 + ipAddress + subnet + port + status + gw + unused2
+        return header + opCode + vers + unused1 + ipAddress + subnet + port + status + status + gw + unused2
+
+    def decOpIpProgReply(self, rx_buff):
+        cmd = rx_buff[14] 
+        print(cmd)
 
 
 if __name__ == "__main__":

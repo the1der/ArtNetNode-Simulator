@@ -87,7 +87,7 @@ def sendArtAddress():
     packet = header + opcode + protver + netSwitch + bindIndex + shortName + longName + swIn + swOut + subSwitch + acnPriority + command
 
     sock.sendto(header + opcode + protver + netSwitch + bindIndex + shortName + longName + swIn + swOut + subSwitch + acnPriority + command, server_addr)
-create_artnet_poll_message()
+# create_artnet_poll_message()
 # create_artnet_opoutput_message()
-# create_artnet_OpIpProg_message()
+create_artnet_OpIpProg_message()
 # sendArtAddress()
