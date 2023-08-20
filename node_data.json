@@ -1,0 +1,1 @@
+{"short_name": "node short name", "long_name": "node long name", "mac_address": [75, 215, 159, 23, 225, 108], "ip": [192, 168, 100, 71], "gateway": [192, 168, 100, 255], "netmask": [255, 255, 255, 0], "dhcp_enable": 1, "dhcp_capable": 1}
