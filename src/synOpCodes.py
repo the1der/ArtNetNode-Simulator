@@ -1,0 +1,4 @@
+SynOut = 0xC000
+SynOutReply = 0xC001
+SynMap = 0xD000
+SynMapReply = 0xD001

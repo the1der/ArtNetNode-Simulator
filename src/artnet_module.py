@@ -1,9 +1,10 @@
 import socket
 import src.opcodes as opCodes
 import src.node_data as nodedata
-
+import src.synOpCodes as synOpCodes
 class ArtNetModule:
-    PROTOCOL_ID = b"Art-Net\0"
+    ARTNET_ID = b"Art-Net\0"
+    SYNTHESIS_ID = b"SYNTHESIS\0"
     PORT = 6454
     sock = 0
     node_data = nodedata.NodeData()
@@ -19,7 +20,7 @@ class ArtNetModule:
         while True:
             print('Listing ..')
             data, address = self.sock.recvfrom(1024)
-            if data[:8] == self.PROTOCOL_ID:
+            if data[:8] == self.ARTNET_ID:
                 opcode = (data[9] << 8) + data[8]
                 
                 if opcode == opCodes.OpPoll:
@@ -37,14 +38,36 @@ class ArtNetModule:
                     print("OpIpProgReply sent")
                     continue
 
-                print(f'Unhalled opCode: {hex(opcode)}')
+                print(f'Unhalled Art-Net opCode: {hex(opcode)}')
+
+            if data[:10] == self.SYNTHESIS_ID:
+                opcode = (data[11] << 8) + data[10]
+                if opcode == synOpCodes.SynOut:
+                    print("SynOut recieved")
+                    outputType, colorModel, cableSelect = self.decSynOutPacket(data)
+                    tx_data = self.genSynOutReplyPacket(outputType, colorModel, cableSelect)
+                    self.sock.sendto(tx_data,address)
+                    print("SynOutReply sent")
+                    continue
+
+                if opcode == synOpCodes.SynMap:
+                    print("SynMap recieved")
+                    print(data)
+                    sChannel, LEDs, sUniverse = self.decSynMapPacket(data)
+                    tx_data = self.genSynMapReplyPacket(sChannel, LEDs, sUniverse)
+                    print(tx_data)
+                    self.sock.sendto(tx_data,address)
+                    print("SynMapReply sent")
+                    continue
+
+                print(f'Unhalled Synthesis opCode: {hex(opcode)}')
 
 
     def gen_artpollreply(self):
         st = 0x40 if self.node_data.dhcp_capable else 0x00
         st = st | 0x20 if self.node_data.dhcp_enable else st
         data = bytearray(213)
-        header = bytearray(self.PROTOCOL_ID)
+        header = bytearray(self.ARTNET_ID)
         opCode = bytearray([0x00, 0x21])
         ipAddress = bytearray(self.node_data.ip)
         port=  bytearray([0x36,0x19])
@@ -67,7 +90,7 @@ class ArtNetModule:
 
     def genOpIpProgReply(self):
         
-        header = bytearray(self.PROTOCOL_ID)
+        header = bytearray(self.ARTNET_ID)
         opCode = bytearray([0x00, 0xf9])
         vers = bytearray([0x00, 0x00])
         unused1= bytearray(4)
@@ -83,6 +106,45 @@ class ArtNetModule:
         cmd = rx_buff[14] 
         print(cmd)
 
+    def decSynOutPacket(self, rx_buff):
+        if(rx_buff[12] != 0):
+            outputType = rx_buff[13] & 0x7F
+            colorModel = rx_buff[14] & 0x7F
+            cableSelect = rx_buff[15] & 0x7F
+        else:
+            outputType = 2
+            colorModel = 1
+            cableSelect = 3
+        return outputType, colorModel, cableSelect
+    
+    def genSynOutReplyPacket(self, outputType, colorModel, cableSelect):
+        header = bytearray(self.SYNTHESIS_ID)
+        opCode = bytearray([0x01, 0xC0])
+        unused = bytearray([0x00])
+        data = bytearray([outputType, colorModel, cableSelect, 0x00])
+        return header + opCode + unused + data + unused
+    
+    def decSynMapPacket(self, rx_buff):
+        if(rx_buff[12] != 0):
+            startChannel = ((rx_buff[13] & 0x7F ) << 8 ) + rx_buff[14]
+            LedNumber = ((rx_buff[15] & 0x7F ) << 8 ) + rx_buff[16]
+            startUniverse = ((rx_buff[17] & 0x7F ) << 8 )+ rx_buff[18]
+
+        else:
+            startUniverse = 1
+            startChannel = 2
+            LedNumber = 126
+        print("sChennel: " + str(startChannel))
+        print("LEDs: " + str(LedNumber))
+        print("sUniverse: " + str(startUniverse))
+        return startChannel, LedNumber, startUniverse 
+    
+    def genSynMapReplyPacket(self, startChannel, LedNumber, startUniverse):
+        header = bytearray(self.SYNTHESIS_ID)
+        opCode = bytearray([0x01, 0xD0])
+        unused = bytearray([0x00])
+        data = bytearray([(startChannel >> 8) & 0xFF, startChannel & 0x00FF, (LedNumber >> 8) & 0xFF, LedNumber & 0x00FF, (startUniverse >> 8) & 0xFF, startUniverse & 0x00FF, 0x00])
+        return header + opCode + unused + data + unused
 
 if __name__ == "__main__":
     
